@@ -46,7 +46,7 @@ cd $NAME/docs
 
 　[Deflate][]とは[LZ77][]と[ハフマン符号化][]を組み合わせた[可逆データ圧縮][][アルゴリズム][]。
 
-　[PNG仕様][PNG Filtering]によると、フィルタリング（[ハフマン符号化]）したあと、[LZ77][]圧縮する。フィルタリングには以下の5種類がある。
+　[PNG仕様][PNG Filtering]によると、画像データのエンコードはフィルタリングしたあと、[Deflate][]圧縮する。つまりデコードするには[Deflate][]解凍したあと、フィルタリングを解く必要がある。フィルタリングには以下の5種類がある。
 
 type|name
 ----|----
@@ -81,7 +81,7 @@ IndexedColor(`3`)|`1`,`2`,`4`,`8`|`0`
 [PNG イメージを自力でパースしてみる ～2/6 Deflateの基本と固定ハフマン編～]:https://darkcrowcorvus.hatenablog.jp/entry/2016/09/27/222117
 [PNG イメージを自力でパースしてみる ～4/6 非圧縮とzlib編～]:https://darkcrowcorvus.hatenablog.jp/entry/2017/01/09/014407
 
-　さすがにこの圧縮アルゴリズムを自分で実装するのは大変そう。なのでライブラリを探す。
+　さすがにこの圧縮アルゴリズムを全部自分で実装するのは大変そう。なのでライブラリを探す。
 
 ## zlibライブラリ
 
@@ -123,9 +123,39 @@ const output = inflator.result;
 [pako CDN]:https://cdnjs.com/libraries/pako
 [pako.esm.mjs]:https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.esm.mjs
 
+　前に参考にさせてもらったfast-pngのコードを見てみる。次のような流れだった。
 
-65792
-65536(256*256)
+1. `this._inflator.push(IDAT.data)` [PngDecoder.ts#L204][]
+1. `this._inflator.result` [PngDecoder.ts#L274][]
+1. `decodeInterlaceNull(IDAT.data)` [PngDecoder.ts#L281][], [PngDecoder.ts#L289][]
+
+[PngDecoder.ts#L204]:https://github.com/image-js/fast-png/blob/main/src/PngDecoder.ts#L204
+[PngDecoder.ts#L274]:https://github.com/image-js/fast-png/blob/main/src/PngDecoder.ts#L274
+[PngDecoder.ts#L281]:https://github.com/image-js/fast-png/blob/main/src/PngDecoder.ts#L281
+[PngDecoder.ts#L289]:https://github.com/image-js/fast-png/blob/main/src/PngDecoder.ts#L289
+
+1. `inflator.push()`, `inflator.result`で`IDAT.data`のバイナリデータを取得する
+1. 1を解読しフィルタリングを解く
+1. ピクセル配列として返す
+
+　デコードには`Inflate`というクラスを使うらしい。ただ、フィルタリングまでは解けないようで自力で実装している。
+
+　このフィルタリング実装をパクってみたが、テスト画像[3-1-4x4.png][]のときエラーになった。これは`ColorType=3`, `BitDepth=1`である。要するに1Bit(2色)のインデックスカラーである。コード箇所[png.js#L176][]。`subarray`の引数は整数であるべきだが少数値になってしまい`undefined`が返されて後にエラーとなる。
+
+```javascript
+currentLine = data.subarray(offset + 1, offset + 1 + bytesPerLine);
+```
+
+[3-1-4x4.png]:https://ytyaru.github.io/Html.PNG.Decode.IDAT.zlib.LZ77.Deflate.20221205142316/asset/image/3-1-4x4.png
+[png.js#L176]:https://ytyaru.github.io/Html.PNG.Decode.IDAT.zlib.LZ77.Deflate.20221205142316/js/png.js
+
+
+
+
+
+
+
+
 
 
 ## PNGのおさらい
