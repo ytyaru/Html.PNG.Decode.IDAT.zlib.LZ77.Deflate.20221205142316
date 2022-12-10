@@ -25,6 +25,13 @@
     <li><a href="https://developer.mozilla.org/ja/docs/Web/JavaScript/Typed_arrays">JavaScript の型付き配列</a></li>
     <li><a href="https://www.w3.org/TR/png/#5PNG-file-signature">PNGファイルシグネチャ</a></li>
 </ul>
+<p>IDATの画像データをデコードするにはzlibのDeflate圧縮を解凍するほかに、フィルタリングを解く必要があった。フィルタリングについては自前でコーディングする必要がある。<a href="https://github.com/image-js/fast-png/blob/main/src/PngDecoder.ts#L289">fast-png PngDecoder.ts</a>を参考にしたが、ColorType=3, BitDepth=1のときエラーになってしまう。<code>ArrayBuffer.subarray()</code>の引数に渡す値が小数点数になってしまうのが原因。BitDepth=1のとき<code>bytesPerLine</code>が小数点になるせい。</p>
+<table>
+<tr><th>結果</th><th>テスト画像</th><th>ColorType</th><th>BitDepth</th></tr>
+<tr><td>⭕</td><td><a href="https://ytyaru.github.io/Html.PNG.Decode.IDAT.zlib.LZ77.Deflate.20221205142316/asset/image/3-4-4x4.png">3-4-4x4.png</a></td><td>3</td><td>4</td></tr>
+<tr><td>⭕</td><td><a href="https://ytyaru.github.io/Html.PNG.Decode.IDAT.zlib.LZ77.Deflate.20221205142316/asset/image/3-2-4x4.png">3-2-4x4.png</a></td><td>3</td><td>2</td></tr>
+<tr><td>❌</td><td><a href="https://ytyaru.github.io/Html.PNG.Decode.IDAT.zlib.LZ77.Deflate.20221205142316/asset/image/3-1-4x4.png">3-1-4x4.png</a></td><td>3</td><td>1</td></tr>
+</table>
 <!--
 <fieldset>
 <legend>バイナリ操作API</legend>

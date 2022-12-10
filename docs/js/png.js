@@ -152,16 +152,17 @@ class ImageDecoder { // https://github.com/image-js/fast-png/blob/bae6d935ff0d25
             default: throw new Error(`colorTypeは0,2,3,4,6のいずれかであるべきです。`)
         }
     }
-    #decodeInterlaceNull(IHDR, data) {
+    #decodeInterlaceNull(IHDR, data) { // https://github.com/image-js/fast-png/blob/main/src/PngDecoder.ts#L289
         console.log(IHDR)
         // 走査線: bitDepth < 8 のときは 1Byte にパックされ上位ビット左端に詰める。
         // https://www.w3.org/TR/png/#7Scanline
-        if (IHDR.bitDepth < 8) { throw new Error(`bitDepthが8未満には未対応です。`) }
-        const bytesPerPixel = Math.floor((this.#channels(IHDR.colorType) * IHDR.bitDepth) / 8);
-        //const bytesPerPixel = (this.#channels(IHDR.colorType) * IHDR.bitDepth) / 8;
+        //if (IHDR.bitDepth < 8) { throw new Error(`bitDepthが8未満には未対応です。`) }
+        //const bytesPerPixel = Math.floor((this.#channels(IHDR.colorType) * IHDR.bitDepth) / 8);
+        const bytesPerPixel = (this.#channels(IHDR.colorType) * IHDR.bitDepth) / 8;
         const bytesPerLine = IHDR.width * bytesPerPixel;
         const newData = new Uint8Array(IHDR.height * bytesPerLine);
-
+        console.log(`bytesPerPixel:${bytesPerPixel}`)
+        console.log(`bytesPerLine:${bytesPerLine}`)
         // bitDepth=1,2,4の場合にもデコードできるようにしたい
         // bpp(bit per pixel)が必要になる。
         // https://github.com/lukeapage/pngjs/blob/master/lib/bitmapper.js
@@ -171,6 +172,7 @@ class ImageDecoder { // https://github.com/image-js/fast-png/blob/bae6d935ff0d25
         let currentLine;
         let newLine;
         for (let i = 0; i < IHDR.height; i++) {
+            console.log(offset, offset + 1 + bytesPerLine)
             currentLine = data.subarray(offset + 1, offset + 1 + bytesPerLine);
             newLine = newData.subarray(i * bytesPerLine, (i + 1) * bytesPerLine);
             switch (data[offset]) {
